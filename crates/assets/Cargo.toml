@@ -1,0 +1,19 @@
+[package]
+name = "assets"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "brain-digger game prototype"
+repository = "https://github.com/queer-emma/brain-digger"
+license = "MIT"
+
+[dependencies.utils]
+version = "0.1.0"
+path = "../utils"
+
+[dependencies]
+log = "0.4"
+image = "0.24"
+serde = "1.0"
+serde_json = "1.0"
+euclid = { version = "0.22", features = ["serde"] }

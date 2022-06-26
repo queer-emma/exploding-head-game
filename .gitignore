@@ -1,0 +1,5 @@
+crates/*/target/
+crates/*/dist/
+crates/*/Cargo.lock
+.env
+/.vscode
