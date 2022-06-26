@@ -2,7 +2,6 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-
 pub mod config;
 pub mod error;
 pub mod game;
@@ -10,13 +9,17 @@ pub mod graphics;
 pub mod inputs;
 pub mod sounds;
 
-use winit::{event_loop::EventLoop, window::WindowBuilder};
-
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
+use winit::{
+    event_loop::EventLoop,
+    window::WindowBuilder,
+};
 
-use crate::{config::Config, graphics::Graphics};
-
+use crate::{
+    config::Config,
+    graphics::Graphics,
+};
 
 /// todo: split out window stuff and input better.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
@@ -81,4 +84,3 @@ pub async fn run() {
             .expect("failed to handle event");
     });
 }
-

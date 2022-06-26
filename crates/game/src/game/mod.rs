@@ -1,13 +1,14 @@
 //! # todo
-//! 
+//!
 //! create components for camera and sprite.
 
 use legion::World;
-use nalgebra::{Point2, Vector2};
+use nalgebra::{
+    Point2,
+    Vector2,
+};
 
 use crate::graphics::Graphics;
-
-
 
 /// dimension of the object.
 pub enum Dimension {
@@ -18,24 +19,16 @@ pub enum Dimension {
     OuterWorld,
 }
 
-
-
-
-
 /// position in the world
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Position(Point2<f32>);
 
-/// velocity of an object. this will be added to the position in every tick (asjusted for framerate)
+/// velocity of an object. this will be added to the position in every tick
+/// (asjusted for framerate)
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Velocity(Vector2<f32>);
 
-
 struct Acceleration(Vector2<f32>);
-
-
-
-
 
 #[derive(Debug)]
 struct Game {
@@ -45,8 +38,6 @@ struct Game {
     // todo: put graphics stuff in here too.
     graphics: Graphics,
 }
-
-
 
 struct Camera {
     // todo
