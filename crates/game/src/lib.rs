@@ -11,15 +11,8 @@ pub mod sounds;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
-use winit::{
-    event_loop::EventLoop,
-    window::WindowBuilder,
-};
 
-use crate::{
-    config::Config,
-    graphics::Graphics,
-};
+use crate::game::Game;
 
 /// todo: split out window stuff and input better.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
@@ -43,44 +36,13 @@ pub async fn run() {
         pretty_env_logger::init();
     }
 
-    // load game config
-    let config = Config::load().await.expect("config error");
-    let window_size = config.graphics.physical_size();
-    log::debug!("window_size = {:?}", window_size);
-
-    let event_loop = EventLoop::new();
-    let window = WindowBuilder::new()
-        .with_min_inner_size(window_size)
-        .build(&event_loop)
-        .unwrap();
-    log::info!("window id: {:?}", window.id());
-
-    #[cfg(target_arch = "wasm32")]
-    {
-        // winit prevents sizing with css, so we have to set
-        // the size manually when on web.
-        use winit::platform::web::WindowExtWebSys;
-
-        window.set_inner_size(window_size);
-
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("root")?;
-                let canvas = web_sys::Element::from(window.canvas());
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
-            .expect("Couldn't append canvas to document body.");
-    }
-
-    let mut graphics = Graphics::new(&window)
+    // todo: handle error with color-eyre somehow?
+    log::info!("initializing game");
+    let game = Game::new()
         .await
-        .expect("failed to initialize state");
+        .inspect_err(|e| log::error!("{}", e))
+        .unwrap();
 
-    event_loop.run(move |event, _, control_flow| {
-        graphics
-            .handle_event(event, control_flow)
-            .expect("failed to handle event");
-    });
+    log::info!("running game");
+    game.run().inspect_err(|e| log::error!("{}", e)).unwrap();
 }

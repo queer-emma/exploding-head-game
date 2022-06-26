@@ -22,3 +22,12 @@ impl From<wasm_bindgen::JsValue> for Error {
         Self::JsValue { value }
     }
 }
+
+#[cfg(target_arch = "wasm32")]
+impl From<Error> for wasm_bindgen::JsValue {
+    fn from(e: Error) -> Self {
+        let s = e.to_string();
+        log::error!("{}", s);
+        s.into()
+    }
+}

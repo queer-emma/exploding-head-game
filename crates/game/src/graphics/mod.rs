@@ -1,5 +1,6 @@
 pub mod texture;
 
+use nalgebra::Matrix4;
 use wgpu::{
     include_wgsl,
     util::DeviceExt,
@@ -10,11 +11,6 @@ use wgpu::{
 };
 use winit::{
     dpi::PhysicalSize,
-    event::{
-        Event,
-        WindowEvent,
-    },
-    event_loop::ControlFlow,
     window::Window,
 };
 
@@ -24,19 +20,22 @@ use crate::{
 };
 
 /// game state.
+///
+/// todo: some things are pub because events are handled in `Game` right now. we
+/// should pass certain events to the `Graphics` objects to handle it.
 #[derive(Debug)]
 pub struct Graphics {
     /// the surface that we render to.
-    surface: Surface,
+    pub surface: Surface,
 
     /// the graphics device used for rendering.
-    device: Device,
+    pub device: Device,
 
     /// the device's command queue.
     queue: Queue,
 
     /// config of the surface that we render to.
-    config: SurfaceConfiguration,
+    pub config: SurfaceConfiguration,
 
     /// physical size of surface in pixels.
     size: PhysicalSize<u32>,
@@ -55,6 +54,11 @@ pub struct Graphics {
 
     /// bind group for the diffuse sprite sheet texture.
     diffuse_bind_group: wgpu::BindGroup,
+
+    /// the single diffuse texture that we render right now.
+    /// this will be the diffuse sprite sheet later, and sprite components refer
+    /// to a portion of it.
+    diffuse_texture: Texture,
 }
 
 impl Graphics {
@@ -234,11 +238,12 @@ impl Graphics {
             index_buffer,
             num_indices,
             diffuse_bind_group,
+            diffuse_texture,
         })
     }
 
     /// todo: this only needs to render rectangular sprites later.
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let frame = self.surface.get_current_texture()?;
         let view = frame
             .texture
@@ -286,43 +291,6 @@ impl Graphics {
 
         Ok(())
     }
-
-    pub fn handle_event<T: 'static>(
-        &mut self,
-        event: Event<T>,
-        control_flow: &mut ControlFlow,
-    ) -> Result<(), Error> {
-        *control_flow = ControlFlow::Wait;
-        match event {
-            Event::WindowEvent { event, .. } => {
-                match event {
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        log::debug!("keyboard input: {:?}", input);
-                    }
-                    WindowEvent::ModifiersChanged(modifiers_state) => {
-                        log::debug!("modifiers changed: {:?}", modifiers_state);
-                    }
-                    WindowEvent::Resized(size) => {
-                        log::info!("resized: {:?}", size);
-
-                        // reconfigure the surface with the new size
-                        self.config.width = size.width;
-                        self.config.height = size.height;
-                        self.surface.configure(&self.device, &self.config);
-                    }
-                    WindowEvent::CloseRequested => {
-                        log::info!("close requested");
-                        *control_flow = ControlFlow::Exit;
-                    }
-                    _ => {}
-                }
-            }
-            Event::RedrawRequested(_) => self.render().expect("failed to render frame"),
-            _ => {}
-        }
-
-        Ok(())
-    }
 }
 
 #[repr(C)]
@@ -367,3 +335,11 @@ const VERTICES: &[Vertex] = &[
 ];
 
 const INDICES: &[u16] = &[0, 1, 3, 1, 2, 3];
+
+#[rustfmt::skip]
+pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.0,
+    0.0, 0.0, 0.5, 1.0,
+);
