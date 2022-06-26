@@ -3,12 +3,16 @@ name = "game"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "brain-digger game prototype"
-repository = "https://github.com/queer-emma/brain-digger"
+description = "exploding-head-game prototype"
+repository = "https://github.com/queer-emma/exploding-head-game"
 license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "exploding-head-game"
+path = "src/main.rs"
 
 [dependencies]
 log = "0.4"
@@ -23,7 +27,10 @@ tokio = { version = "1.19", features = ["macros", "rt-multi-thread", "fs"] }
 bytemuck = { version = "1.9", features = [ "derive" ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-image = "0.24"
+image = { version = "0.24", default-features = false, features = ["png"] }
+legion = { version = "0.4", default-features = false, features = ["serialize", "codegen"] }
+uuid = { version = "1.1", features = ["v4", "serde"] }
+nalgebra = "0.31"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
@@ -31,9 +38,7 @@ console_log = "0.2.0"
 wgpu = { version = "0.12", features = ["webgl"]}
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-    "Storage",
-]}
+web-sys = { version = "0.3", features = ["Document", "Window", "Element", "Storage"]}
+getrandom = { version = "0.2", features = ["js"] }
+uuid = { version = "1.1", features = ["js"] }
+legion = { version = "0.4", features = ["wasm-bindgen"] }

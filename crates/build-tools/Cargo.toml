@@ -3,8 +3,8 @@ name = "build-tools"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "brain-digger game prototype"
-repository = "https://github.com/queer-emma/brain-digger"
+description = "exploding-head-game prototype"
+repository = "https://github.com/queer-emma/exploding-head-game"
 license = "MIT"
 
 [dependencies.utils]

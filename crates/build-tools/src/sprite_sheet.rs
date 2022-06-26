@@ -198,6 +198,9 @@ impl AtlasBuilder {
 */
 
 
+use std::path::Path;
+use color_eyre::eyre::Error;
+
 pub async fn build<P: AsRef<Path>>(output_texture: impl AsRef<Path>, output_sprite_sheet: impl AsRef<Path>, files: &[P]) -> Result<(), Error> {
     todo!();
 }

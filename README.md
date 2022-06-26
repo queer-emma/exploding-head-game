@@ -13,8 +13,18 @@ crates are separate in the `crates/` directory. to make it work in visual studio
 ```json
 {
     "rust-analyzer.linkedProjects": [
-        "crates/*/Cargo.toml",
+        "crates/assets/Cargo.toml",
+        "crates/build-tools/Cargo.toml",
+        "crates/game/Cargo.toml",
+        "crates/utils/Cargo.toml",
     ]
 }
+
 ```
 
+## crates
+
+- `assets`: output of assets processing pipeline with structs.
+- `build-tools`: tools used by build scripts, e.g. the asset processing pipeline.
+- `game`: the game itself.
+- `utils`: common utilities.

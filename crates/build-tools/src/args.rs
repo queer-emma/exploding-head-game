@@ -35,7 +35,7 @@ impl Args {
                     log::debug!(" - `{}`", file.display());
                 }
 
-                crate::sprite_sheet::build(output_texture, output_sprite_sheet, files);
+                crate::sprite_sheet::build(output_texture, output_sprite_sheet, &files).await?;
             }
         }
 

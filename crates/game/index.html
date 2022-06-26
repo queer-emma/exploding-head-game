@@ -1,20 +1,32 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>🤯</title>
+    <title>game prototype</title>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="brain-digger team">
-    <meta name="description" content="brain-digger game prototype">
+    <meta name="author" content="exploding-head-game developers">
+    <meta name="description" content="exploding-head-game prototype">
+
+    <link data-trunk rel="copy-dir" href="../../assets"/>
+    <link rel="icon" href="../../assets/exploding_head_pixelart.png">
+    
     <style>
         /*#root {
             width: 1920px;
             aspect-ratio: 16 / 9;
         }*/
+
+        /*.image-loader {
+          display: none;
+        }*/
     </style>
   </head>
   <body>
+    <div class="image-loader">
+      <!-- test image loaded by browser -->
+      <img id="exploding-head" src="../../assets/exploding_head_pixelart.png" alt="exploding head pixel art" />
+    </div>
     <div id="root"></div>
   </body>
 </html>
