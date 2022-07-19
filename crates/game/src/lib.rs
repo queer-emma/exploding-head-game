@@ -44,5 +44,5 @@ pub async fn run() {
         .unwrap();
 
     log::info!("running game");
-    game.run().inspect_err(|e| log::error!("{}", e)).unwrap();
+    game.run();
 }

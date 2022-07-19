@@ -3,15 +3,14 @@ name = "game"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "exploding-head-game prototype"
-repository = "https://github.com/queer-emma/exploding-head-game"
+description = "game prototype"
 license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "exploding-head-game"
+name = "game-bin"
 path = "src/main.rs"
 
 [dependencies]
@@ -31,6 +30,7 @@ image = { version = "0.24", default-features = false, features = ["png"] }
 legion = { version = "0.4", default-features = false, features = ["serialize", "codegen"] }
 uuid = { version = "1.1", features = ["v4", "serde"] }
 nalgebra = "0.31"
+instant = "0.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
@@ -41,4 +41,4 @@ wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Document", "Window", "Element", "Storage"]}
 getrandom = { version = "0.2", features = ["js"] }
 uuid = { version = "1.1", features = ["js"] }
-legion = { version = "0.4", features = ["wasm-bindgen"] }
+legion = { version = "0.4", default-features = false, features = ["wasm-bindgen"] }

@@ -117,7 +117,7 @@ impl Graphics {
         // todo: use a sprite sheet and use browser image decoding.
         // todo: generate sprite sheet with build script, or a proc-macro.
         let diffuse_texture_bytes =
-            include_bytes!("../../../../assets/exploding_head_pixelart.png");
+            include_bytes!("../../../../assets/sprites/exploding_head_pixelart.png");
         let diffuse_texture = Texture::from_bytes(
             &device,
             &queue,

@@ -4,15 +4,15 @@
 //!
 //! for 3d stuff, take a look at:  https://www.nalgebra.org/docs/user_guide/cg_recipes
 
-use legion::{World, Resources, Schedule, Entity, system};
-use nalgebra::{
-    Isometry3,
-    Perspective3,
-    Point2,
-    Point3,
-    Similarity3,
-    Vector2,
-    Vector3,
+pub mod components;
+pub mod resources;
+pub mod systems;
+
+use legion::{
+    system,
+    Resources,
+    Schedule,
+    World,
 };
 use winit::{
     event::{
@@ -32,156 +32,48 @@ use winit::{
 use crate::{
     config::Config,
     error::Error,
+    game::{
+        components::{
+            Camera,
+            Dimension,
+            GlobalTransform,
+            LocalTransform,
+            Parent,
+            Sprite,
+        },
+        resources::{
+            CurrentCamera,
+            Time,
+        },
+    },
     graphics::Graphics,
 };
 
-/// dimension of the object.
-pub enum Dimension {
-    /// a.k.a. wonderworld. this is the imagined world inside the player's head.
-    InnerWorld,
-
-    /// a.k.a. reality. the physical game world. represents shared reality.
-    OuterWorld,
-}
-
-/// a model's transform relative to the parent
-/// 
-/// todo: should we just add the parent entity to this?
-#[derive(Clone, Copy, Debug)]
-pub struct LocalTransform(pub Similarity3<f32>);
-
-impl Default for LocalTransform {
-    fn default() -> Self {
-        Self(Similarity3::new(
-            nalgebra::zero(),
-            nalgebra::zero(),
-            nalgebra::one(),
-        ))
-    }
-}
-
-impl LocalTransform {
-    pub fn new(x: impl Into<Similarity3<f32>>) -> Self {
-        Self(x.into())
-    }
-
-    /// todo: call this from a system to update the global transform. or remove
-    /// this method and move the code altogether.
-    pub fn to_global<'a>(
-        self,
-        parent_transform: impl Into<Option<&'a GlobalTransform>>,
-    ) -> GlobalTransform {
-        if let Some(parent_transform) = parent_transform.into() {
-            GlobalTransform(&parent_transform.0 * &self.0)
-        }
-        else {
-            GlobalTransform(self.0)
-        }
-    }
-}
-
-/// a model's global transform
-#[derive(Clone, Copy, Debug)]
-pub struct GlobalTransform(pub Similarity3<f32>);
-
-impl GlobalTransform {
-    pub fn new(similarity: impl Into<Similarity3<f32>>) -> Self {
-        Self(similarity.into())
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Parent {
-    // todo: entity id of parent. we'll use this when we compute the absolute transform for an
-    // entity.
-}
-
-/// position in the world
-#[derive(Clone, Copy, Debug)]
-pub struct Position(pub Point2<f32>);
-
-/// orientation of entity. the vector points up.
-#[derive(Clone, Copy, Debug)]
-pub struct Orientation(pub Vector2<f32>);
-
-/// velocity of an object. this will be added to the position in every tick
-/// (asjusted for framerate)
-#[derive(Clone, Copy, Debug)]
-pub struct Velocity(pub Vector2<f32>);
-
-#[derive(Clone, Copy, Debug)]
-pub struct Acceleration(pub Vector2<f32>);
-
-/// camera component. the camera entity will also need a position and
-/// orientation component (or use defaults). we can compute.
-///
-/// todo: we want projection and not orthographic, right? with perspective we
-/// can have parallex with the background.
-pub struct Camera {
-    camera_projection: Perspective3<f32>,
-}
-
-impl Default for Camera {
-    fn default() -> Self {
-        Self::new(16.0 / 9.0, std::f32::consts::FRAC_PI_2, 1.0, 1000.0)
-    }
-}
-
-impl Camera {
-    pub fn new(aspect_ratio: f32, fovy: f32, znear: f32, zfar: f32) -> Self {
-        // our camera looks toward the point (0.0, 0.0, 0.0).
-        // it is located at (0.0, 0.0, 1.0).
-        let eye = Point3::from([0.0, 0.0, 1.0]); // todo: this is the global transform of the camera entity
-
-        let target = Point3::from([0.0, 0.0, 0.0]);
-        let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-
-        // a perspective projection.
-        // todo: use the aspect ratio from the window
-        let camera_projection = Perspective3::new(aspect_ratio, fovy, znear, zfar);
-
-        Self { camera_projection }
-    }
-}
-
-/// this defines which camera is used for rendering. this also currently restricts stuff to rendering to exactly one surface, which is not strictly necessary.
-/// 
-/// the dimension attached to the camera will determine which entities are endered.
-#[derive(Copy, Clone, Debug)]
-pub struct CurrentCamera {
-    entity: Entity,
-}
-
-/// component that hides entities.
-pub struct Hidden;
-
-/// todo: something better than a plain index would be nice.
-pub struct Sprite {
-    sprite_index: usize,
-}
-
 pub struct Game {
-    /// game config
-    pub config: Config,
-
     /// the winit event loop that delivers window events.
     ///
-    /// todo: there's docs about making this work across threads.
+    /// note: the generic type is a user-define event, which we don't need
+    /// afaik.
     pub event_loop: EventLoop<()>,
 
     /// the winit window. this is not graphics specific, because it also gives
     /// us input events. although we could probably move it too, since the
     /// events are received through the event loop.
+    ///
+    /// # note
+    ///
+    /// this needs to be kept somewhere, otherwise it's dropped and destroyed,
+    /// and nothing will be rendered anymore.
     pub window: Window,
 
+    // note: moved into resources.
     // todo: put graphics stuff in here too.
-    pub graphics: Graphics,
-
+    //pub graphics: Graphics,
     /// the game world that contains all entities
     pub world: World,
 
     /// global world resources, such as the currently selected camera.
-    /// 
+    ///
     /// todo: do we want to put the graphics, etc. in there?
     pub resources: Resources,
 
@@ -202,6 +94,9 @@ impl Game {
         let window_size = config.graphics.physical_size();
         log::debug!("window_size = {:?}", window_size);
 
+        // this needs to be done in the main thread[1].
+        //
+        // [1] https://docs.rs/winit/latest/winit/event_loop/struct.EventLoop.html#method.new
         let event_loop = EventLoop::new();
 
         let window = WindowBuilder::new()
@@ -234,43 +129,57 @@ impl Game {
 
         // create a test world
         let mut world = World::default();
-
-        let model_entity = world.push((Dimension::OuterWorld, LocalTransform::default()));
+        // a single sprite
+        let model_entity = world.push((
+            Dimension::OuterWorld,
+            LocalTransform::default(),
+            Sprite::new(0),
+        ));
         let camera_entity = world.push((
             Dimension::OuterWorld,
             LocalTransform::default(),
             Camera::new(16.0 / 9.0, 3.14 / 2.0, 1.0, 1000.0),
         ));
 
-        // create resources, such as the current camera.
-        //
-        // todo: it would make sense to have the sprite sheet stuff in a resource.
+        // fill resources
         let mut resources = Resources::default();
-        resources.insert(CurrentCamera { entity: camera_entity });
+        // timing (fps)
+        resources.insert(Time::default());
+        // the game configuration
+        resources.insert(config);
+        // graphics
+        resources.insert(graphics);
+        // the one and only camera fow now.
+        // todo: a camera is kind of associated with a surface and view.
+        resources.insert(CurrentCamera {
+            entity: camera_entity,
+        });
 
         let schedule = Schedule::builder()
             .add_system(update_local_transforms_system())
             .flush()
-            .add_system(render_sprites_system())
+            //.add_system(render_sprites_system())
+            .add_system(render_graphics_system())
             .build();
 
         Ok(Self {
-            config,
             event_loop,
-            window,
-            graphics,
             world,
             resources,
             schedule,
+            window,
         })
     }
 
-    pub fn run(mut self) -> Result<(), Error> {
+    pub fn run(mut self) -> ! {
+        // note: the run method never terminates. `ControlFlow::Exit` will exit the
+        // process.
         self.event_loop.run(move |event, _, control_flow| {
-            // todo: for now we can keep it this way. but i think we want to just send
-            // messages to systems.
+            // todo: somehow we need to know when to set `control_flow = ControlFlow::Exit`.
             *control_flow = ControlFlow::Wait;
             log::trace!("event: {:?}", event);
+
+            // todo: dispatch events to systems.
             match event {
                 Event::WindowEvent { event, .. } => {
                     match event {
@@ -284,11 +193,11 @@ impl Game {
                             log::info!("resized: {:?}", size);
 
                             // reconfigure the surface with the new size
-                            self.config.graphics.width = size.width;
+                            /*self.config.graphics.width = size.width;
                             self.config.graphics.height = size.height;
                             self.graphics
                                 .surface
-                                .configure(&self.graphics.device, &self.graphics.config);
+                                .configure(&self.graphics.device, &self.graphics.config);*/
                         }
                         WindowEvent::CloseRequested => {
                             log::info!("close requested");
@@ -300,11 +209,14 @@ impl Game {
                 Event::RedrawRequested(_) => {
                     log::debug!("render frame");
 
-                    // todo: remove this once we render in the system
-                    self.graphics.render().expect("failed to render frame");
-                
+                    // update timing information
+                    /*{
+                        let mut time = self.resources.get_mut::<Time>().unwrap();
+                        time.update();
+                    }*/
+
                     // do we want to run everything only when a redraw is requested?
-                    //self.schedule.execute(&mut self.world, &mut self.resources);
+                    self.schedule.execute(&mut self.world, &mut self.resources);
                 }
                 _ => {}
             }
@@ -312,20 +224,33 @@ impl Game {
     }
 }
 
-
 /// updates global transforms.
-/// 
 #[system(for_each)]
-fn update_local_transforms(global_transform: &mut GlobalTransform, local_transform: &LocalTransform, parent: &Option<Parent>) {
+fn update_local_transforms(
+    global_transform: &mut GlobalTransform,
+    local_transform: &LocalTransform,
+    parent: &Option<Parent>,
+) {
     log::debug!("system running: update local transforms");
 }
 
 /// system for rendering sprites from the global sprite sheet.
-/// 
-/// todo: move this into graphics. but we can refactor stuff out of the graphics object first.
+///
+/// todo: move this into graphics. but we can refactor stuff out of the graphics
+/// object first.
 #[system(for_each)]
-fn render_sprites(sprite: &mut Sprite, dimension: &Dimension, global_transform: &GlobalTransform, #[resource] current_camera: &CurrentCamera) {
+fn render_sprites(
+    sprite: &mut Sprite,
+    dimension: &Dimension,
+    global_transform: &GlobalTransform,
+    #[resource] current_camera: &CurrentCamera,
+) {
     log::debug!("system running: render sprites");
 
     // todo
+}
+
+#[system]
+fn render_graphics(#[resource] graphics: &mut Graphics) {
+    graphics.render().expect("failed to render frame");
 }
